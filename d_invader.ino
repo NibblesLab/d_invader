@@ -412,14 +412,14 @@ void disp_num(int val_b, int val_e)
 }
 
 /*
- * Count digits for accmulator
+ * Count digits
  */
-uint8_t numDigitacc()
+uint8_t numDigit(long val_b)
 {
   char str[18];
   uint8_t i, num = 0;
 
-  sprintf(str, "%17d", acc_b);
+  sprintf(str, "%17d", val_b);
   for(i = 16; i > 0; i--)
   {
     if(isDigit(str[i]))
@@ -462,7 +462,7 @@ void adjust_acc()
     }
     acc_b = atoi(str);
   }
-  k = numDigitacc();
+  k = numDigit(acc_b);
   if(k-acc_e > 8) // overflow
   {
     err_flag = true;
@@ -491,7 +491,7 @@ void adjust_acc()
  */
 void calc(uint8_t lopr)
 {
-  uint8_t t;
+  uint8_t t, i;
 
   switch(lopr)
   {
@@ -522,9 +522,38 @@ void calc(uint8_t lopr)
       adjust_acc();
       break;
     case '*':
-      acc_b *= inp_b;
-      acc_e += inp_e;
-      adjust_acc();
+      t = numDigit(acc_b) + numDigit(inp_b);
+      if(t-acc_e-inp_e > 8)
+      {
+        err_flag = true;
+        acc_b = 0;
+        acc_e = 0;
+      }
+      else if(t > 8)
+      {
+        for(i = 0; i < t-8; i++)
+        {
+          if(acc_e > inp_e)
+          {
+            acc_b /= 10;
+            acc_e--;
+          }
+          else
+          {
+            inp_b /= 10;
+            inp_e--;
+          }
+        }
+        acc_b *= inp_b;
+        acc_e += inp_e;
+        adjust_acc();
+      }
+      else
+      {
+        acc_b *= inp_b;
+        acc_e += inp_e;
+        adjust_acc();
+      }
       break;
     case '/':
       if(inp_b == 0)
@@ -535,7 +564,7 @@ void calc(uint8_t lopr)
       }
       else
       {
-        t = numDigitacc()-1;
+        t = numDigit(acc_b)-1;
         acc_b *= pow(10, 8-t);
         acc_e += 8-t;
         acc_b /= inp_b;
