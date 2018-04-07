@@ -9,7 +9,7 @@
  *  Valiables
  */
 static xQueueHandle keyboard_queue = NULL;
-long acc_b;     // Accumrator
+long acc_b;     // Accumlator
 int acc_e;
 int inp_b;      // Input buffer
 int inp_e;
@@ -30,7 +30,8 @@ bool ufo_flag;        // UFO appear flag false:next enemy is normal true:next en
 bool go_flag;         // Game Over flag false:in play true:end of game
 bool en_keys;         // Key input enable false:not key-in true:key-in
 bool err_flag;        // Error flag false:normal true:in error mode
-bool acc_empty_flag;  // Empty accumrator flag false:not empty true:empty
+bool acc_empty_flag;  // Empty accumlator flag false:not empty true:empty
+bool dup_flag;        // Duplicate accumlator and input buffer false:no true:yes
 uint8_t g_phase;      // Game proceeding
 uint8_t g_aim;        // Aiming number
 uint8_t g_remain;     // Remain my deffence line
@@ -303,6 +304,7 @@ void setup()
   mem_s = 1;
   err_flag = false;
   acc_empty_flag = true;
+  dup_flag = false;
   g_mode = false;
   g_hiscore = 0;
   g_fire = false;
@@ -563,10 +565,6 @@ void loop()
     {
       if(key_val > 0x2F && key_val < 0x3A && !err_flag) // num keys
       {
-        if(!err_flag)
-        {
-        
-        }
         if(opr == '=')
         {
           acc_b = 0;
@@ -575,6 +573,7 @@ void loop()
         }
         if(inp_d > 0)
         {
+          dup_flag = false;
           inp_b = inp_b * 10 + key_val - 0x30;
           if(inp_b != 0 || inp_mode)
           {
@@ -628,6 +627,8 @@ void loop()
           inp_b = 0;
           inp_e = 0;
           inp_d = 8;
+          inp_s = 1;
+          inp_mode = false;
           disp_num(inp_b, inp_e);
         }
       }
@@ -771,6 +772,7 @@ void loop()
           inp_mode = false;
           opr = key_val;
           acc_empty_flag = false;
+          dup_flag = true;
           disp_num(acc_b, acc_e);
         }
         else
@@ -782,7 +784,16 @@ void loop()
           }
           else  // calcurate
           {
-            inp_b *= inp_s;
+            if(dup_flag)  // duplicate from accumlate to input buffer
+            {
+              inp_b = acc_b;
+              inp_e = acc_e;
+              dup_flag = false;
+            }
+            else
+            {
+              inp_b *= inp_s;
+            }
             if(opr == '%')
             {
               calc(key_val);
